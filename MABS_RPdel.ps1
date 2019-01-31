@@ -1,7 +1,7 @@
-﻿#——————————————————————————————–#
-# Script_Name : MABD_RPDel.ps1
-# Description : Gets input from user to delete selected Recovery point; Deletes only one recovery point per operation
-# Version : 1
+#——————————————————————————————–#
+# Script_Name : MABS_RPDel_v2.ps1
+# Description : Gets input from user to delete one or more recovery points.
+# Version : 2
 # Date : January 2019
 # Created by Arjun N
 # Disclaimer:
@@ -12,6 +12,7 @@
 # OUT OF OR IN CONNECTION WITH THE SCRIPT OR THE USE OR OTHER DEALINGS IN THE SCRIPT.
 #——————————————————————————————-#
 $Backup_server = Read-Host("Enter Backup Server")
+$rpdel1 = {
 $pgList = get-protectiongroup $Backup_server
 $i=0;foreach($pg in $pgList){write-host (“{0} : {1}” -f $i, $pg.friendlyname);$i++}
 
@@ -23,5 +24,33 @@ $dslistval = Read-Host("Enter data source index number")
 $rpList = get-recoverypoint $dslist[$dslistval]
 $i=0;foreach($rp in $rpList){write-host (“{0} : {1}” -f $i, $rp.representedpointintime);$i++}
 
+<#
 $rplistval = Read-Host("Enter recovery point index number")
 remove-recoverypoint -recoverypoint $rpList[$rplistval] -ForceDeletion
+#>
+
+Write-Host "`nEnter the index value of the first recovery point to be deleted"
+$FromWhich = Read-Host
+
+
+Write-Host "`nEnter the number of recovery points to be deleted starting from" $FromWhich
+$HowMany = Read-Host
+
+for($k=1; $k -le $HowMany; $k=$k+1)
+{
+remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False ;
+[int]$FromWhich=[int]$FromWhich+1}
+}
+
+&$rpdel1
+
+$again = Read-Host("Remove more recovery points?(Y/N)")
+if($again -eq "y")
+{ &$rpdel1
+}
+else {
+Disconnect-DPMServer
+Write-Host("Quitting...");
+Start-Sleep -Seconds 5
+exit
+}
