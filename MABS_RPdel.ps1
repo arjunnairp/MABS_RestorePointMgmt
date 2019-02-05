@@ -41,7 +41,7 @@ $HowMany = Read-Host
 
 for($k=1; $k -le $HowMany; $k=$k+1)
 {
-remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False ;
+remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False -ForceDeletion ;
 [int]$FromWhich=[int]$FromWhich+1}
 }
 
