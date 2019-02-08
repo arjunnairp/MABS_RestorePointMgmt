@@ -1,10 +1,11 @@
 #——————————————————————————————–#
 # Script_Name : MABS_RPDel.ps1
 # Description : Gets input from user to delete one or more recovery points.
-# Version : 2.1
+# Version : 2.2
 # Changes:
 # v2: a. Deletes multiple recover points of the same volume b. Loops through the scipt again as per request
 # v2.1: Removed Disk Allocation info to simplify the output of list of recovery points
+# v2.2: Added -ForceDeletion parameter to force-remove recovery points that might not get deleted sometimes
 # Date : January 2019
 # Created by Arjun N
 # Disclaimer:
