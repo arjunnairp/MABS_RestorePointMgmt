@@ -1,12 +1,13 @@
 #——————————————————————————————–#
 # Script_Name : MABS_RPDel.ps1
 # Description : Gets input from user to delete one or more recovery points.
-# Version : 2.3
+# Version : 2.4
 # Changes:
 # v2: a. Deletes multiple recover points of the same volume b. Loops through the scipt again as per request
 # v2.1: Removed Disk Allocation info to simplify the output of list of recovery points
 # v2.2: Added -ForceDeletion parameter to force-remove recovery points that might not get deleted sometimes
-# v2.3: Added Recursive loop
+# v2.3: Added Recursive loop function call for removing recovery points
+# v2.4: Added ErrorActionPreference for exiting script in-case of an unexpected input
 # Date : January 2019
 # Created by Arjun N
 # Disclaimer:
@@ -16,6 +17,7 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 # OUT OF OR IN CONNECTION WITH THE SCRIPT OR THE USE OR OTHER DEALINGS IN THE SCRIPT.
 #——————————————————————————————-#
+$ErrorActionPreference = "Stop"
 $Backup_server = Read-Host("Enter Backup Server")
 $rpdel1 = {
 $pgList = get-protectiongroup $Backup_server
