@@ -8,6 +8,7 @@
 # v2.2: Added -ForceDeletion parameter to force-remove recovery points that might not get deleted sometimes
 # v2.3: Added Recursive loop function call for removing recovery points
 # v2.4: Added ErrorActionPreference for exiting script in-case of an unexpected input
+# v2.4: Added picking up Backup server from local powershell console using environment variables
 # Date : January 2019
 # Created by Arjun N
 # Disclaimer:
@@ -18,7 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SCRIPT OR THE USE OR OTHER DEALINGS IN THE SCRIPT.
 #——————————————————————————————-#
 $ErrorActionPreference = "Stop"
-$Backup_server = Read-Host("Enter Backup Server")
+$Backup_server = Read-Host("Enter Backup Server(Hit Return if this is the backup server)")
+if($Backup_server.Length -eq "")
+{ $Backup_server = $env:COMPUTERNAME
+}
 $rpdel1 = {
 $pgList = get-protectiongroup $Backup_server
 $i=0;foreach($pg in $pgList){write-host (“{0} : {1}” -f $i, $pg.friendlyname);$i++}
