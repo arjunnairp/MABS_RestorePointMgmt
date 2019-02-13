@@ -23,7 +23,7 @@ $Backup_server = Read-Host("Enter Backup Server(Hit Return if this is the backup
 if($Backup_server.Length -eq "")
 { $Backup_server = $env:COMPUTERNAME
 }
-$rpdel1 = {
+$rpdel = {
 $pgList = get-protectiongroup $Backup_server
 $i=0;foreach($pg in $pgList){write-host (“{0} : {1}” -f $i, $pg.friendlyname);$i++}
 
@@ -53,17 +53,17 @@ remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False -ForceDe
 [int]$FromWhich=[int]$FromWhich+1}
 }
 
-&$rpdel1
+&$rpdel
 
 $loopthrough = {
 $again = Read-Host("Remove more recovery points?(Y/N)")
 if($again -eq "y")
-{ &$rpdel1
+{ &$rpdel
   &$loopthrough
 }
 else {
 Disconnect-DPMServer
-Write-Host("Quitting...");
+Write-Host("Disconnecting...");
 Start-Sleep -Seconds 5
 exit
 }
