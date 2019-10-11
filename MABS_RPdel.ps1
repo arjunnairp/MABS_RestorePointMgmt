@@ -1,15 +1,8 @@
 #——————————————————————————————–#
 # Script_Name : MABS_RPDel.ps1
 # Description : Gets input from user to delete one or more recovery points.
-# Version : 2.4
-# Changes:
-# v2: a. Deletes multiple recover points of the same volume b. Loops through the scipt again as per request
-# v2.1: Removed Disk Allocation info to simplify the output of list of recovery points
-# v2.2: Added -ForceDeletion parameter to force-remove recovery points that might not get deleted sometimes
-# v2.3: Added Recursive loop function call for removing recovery points
-# v2.4: Added ErrorActionPreference for exiting script in-case of an unexpected input
-# v2.4: Added picking up Backup server from local powershell console using environment variables
-# Date : January 2019
+# Version : 1.0-A
+# Date : October 2019
 # Created by Arjun N
 # Disclaimer:
 # THE SCRIPT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
@@ -18,55 +11,77 @@
 # DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
 # OUT OF OR IN CONNECTION WITH THE SCRIPT OR THE USE OR OTHER DEALINGS IN THE SCRIPT.
 #——————————————————————————————-#
-$ErrorActionPreference = "Stop"
-$Backup_server = Read-Host("Enter Backup Server(Hit Return if this is the backup server)")
+
+param (
+
+[string]$Backup_server = (Read-Host -prompt 'Enter Backup Server (Hit Return if this is the backup server)'),
+[INT32]$MaxRpt = (Read-Host -prompt 'Maximum Recovery points?')
+)
+
+Start-Transcript -Path "$pwd\mabslog$(get-date -f yyyy-MM-dd-hh-mm-ss).log"
+
+<# *** Fail-Safe switch - To be used when script needs to be run manually. ***
+
+while($MaxRpt -le 10)
+{ 
+  $failsafe =   Read-Host("Seriously? Less than 10? Continue?(Y/N)")
+  if ($failsafe -eq "N")
+{   Write-Host Exitting....
+    Pause 5
+    exit}
+
+Elseif (($MaxRpt -eq 0) -and ($failsafe -eq "Y"))
+{  Write-Host Cant continue with cleanup... Exitting....
+    Pause 5
+    exit
+}
+else
+{break}
+}
+
+*** Fail safe part ends *** #>
+
 if($Backup_server.Length -eq "")
 { $Backup_server = $env:COMPUTERNAME
 }
-$rpdel = {
+
 $pgList = get-protectiongroup $Backup_server
-$i=0;foreach($pg in $pgList){write-host (“{0} : {1}” -f $i, $pg.friendlyname);$i++}
+$pgcount = $pgList.Count
 
-$pglistval = Read-Host("Enter Protection group index number")
-$dsList = get-datasource $pglist[$pglistval]
-$i=0;foreach($ds in $dsList){write-host (“{0} : {1} : {2} : {3}” -f $i, $ds.name, $ds.Computer, $ds.DiskAllocation);$i++}
-
-$dslistval = Read-Host("Enter data source index number")
-$rpList = get-recoverypoint $dslist[$dslistval]
-$i=0;foreach($rp in $rpList){write-host (“{0} : {1}” -f $i, $rp.representedpointintime);$i++}
-
-<#
-$rplistval = Read-Host("Enter recovery point index number")
-remove-recoverypoint -recoverypoint $rpList[$rplistval] -ForceDeletion
-#>
-
-Write-Host "`nEnter the index value of the first recovery point to be deleted"
-$FromWhich = Read-Host
-
-
-Write-Host "`nEnter the number of recovery points to be deleted starting from" $FromWhich
-$HowMany = Read-Host
-
-for($k=1; $k -le $HowMany; $k=$k+1)
+for($pgc=0; $pgc -lt $pgcount; $pgc=$pgc+1)
 {
-remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False -ForceDeletion ;
-[int]$FromWhich=[int]$FromWhich+1}
-}
+$pglistval = $pgc
+$dsList = get-datasource $pglist[$pglistval]
+$dscount = $dsList.count
+    for($dsc=0; $dsc -lt $dscount; $dsc=$dsc+1)
+    {
+    $dslistval = $dsc
 
-&$rpdel
+    $rpList = get-recoverypoint $dslist[$dslistval]
+    $rpcount = $rpList.Count
+    if ($rpcount -gt $MaxRpt)
+    { Write-Host `n $rpcount Recovery points are avaialble for $dsList[$dslistval].DatasourceName on $dsList[$dslistval].computer
+        for ($z=1; $z -le $rpcount; $z++)
+        { Write-Host $rpList[$z].backuptime
+        }
+    }
+    
 
-$loopthrough = {
-$again = Read-Host("Remove more recovery points?(Y/N)")
-if($again -eq "y")
-{ &$rpdel
-  &$loopthrough
-}
-else {
-Disconnect-DPMServer
-Write-Host("Disconnecting...");
-Start-Sleep -Seconds 5
-exit
-}
-}
+    else 
+    { Write-Host `n Only $rpcount recovery points avaialble for $dsList[$dslistval].DatasourceName on $dsList[$dslistval].computer
+      <# **** Uncomment out the below block for additional warnings - Not inteneded when script is run as a scheduled task
+      Read-Host ("`nFine to continue with other datasources/servers ?")
+      #>
+    }
+    
+    $FromWhich = 0
+    $HowMany = $rpcount - $MaxRpt
+        for($k=1; $k -le $HowMany; $k=$k+1)
+        {
+        remove-recoverypoint -recoverypoint $rpList[$FromWhich] -confirm:$False -ForceDeletion ;
+        Write-Host Deleted Recovery point $FromWhich created at $rpList[$FromWhich].BackupTime of $rpList[$FromWhich].DataSource.Name from $rpList[$FromWhich].DataSource.Computer 
 
-&$loopthrough
+        [int]$FromWhich=[int]$FromWhich+1
+        }
+    }
+}
